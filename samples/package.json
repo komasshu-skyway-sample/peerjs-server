@@ -5,6 +5,7 @@
   "author": "Kensaku Komatsu",
   "license": "MIT",
   "dependencies": {
-    "bunyan": "*"
+    "bunyan": "*",
+    "socket.io": "*"
   }
 }
