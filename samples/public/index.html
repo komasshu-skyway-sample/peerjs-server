@@ -1,0 +1,127 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <script src="http://cdn.peerjs.com/0.3/peer.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Simple WebRTC text chat sample</h1>
+      </header>
+      <div>
+        my id : <span id="myid">...</span>
+      </div>
+
+      <div class="connect">
+        <form class="form-inline" role="form">
+          <div class="form-group">
+            <label class="sr-only" for="peerid">connect to </label>
+            <input type="number" class="form-control" id="peerid" required>
+          </div>
+          <button class="btn btn-info" type="submit">connect</button>
+        </form>
+      </div>
+
+      <div class="send">
+        <b>chat message</b>
+        <form role="form" class="form-inline">
+          <div class="form-group">
+            <label class="sr-only" for="message">Message</label>
+            <input id="message" type="text" required>
+          </div>
+          <button class="btn btn-info" type="submit">send</button>
+        </form>
+        <dl></dl>
+      </div>
+    </div>
+
+    <script>
+      "use strict";
+      var peer;
+
+      function init() {
+        var myid = (Math.random() * 1000) | 0;
+        $("#myid").text(myid);
+
+        $(".send").hide();
+        $(".connect").hide();
+
+        peer = new Peer(myid, {host: 'localhost', port: 9000, key: 'peerjs'});
+
+        peer.on('error', function(err){
+          alert(JSON.stringify(err));
+        });
+        peer.on('close', function(ev){
+          console.log("peer closed");
+        });
+
+        peer.on('open', function(){
+          startService();
+        });
+      }
+
+      function startService(){
+        $(".connect").fadeIn();
+        $(".send").hide();
+
+        // connect
+        $(".connect form").on("submit", function(ev){
+          var peerid = $(this).find("#peerid").val();
+          var conn = peer.connect(peerid);
+          $(this).find("#peerid").val("");
+
+          conn.on('open', function(){
+            DataHandler(conn);
+          });
+          return false;
+        });
+
+        // receive
+        peer.on('connection', function(conn) {
+          $(this).find("#peerid").val("");
+          DataHandler(conn);
+        });
+      }
+
+      function DataHandler(conn){
+        $(".connect").hide();
+        $(".send").fadeIn();
+
+        $(".send form").on("submit", function(ev) {
+          var mesg = $(this).find("input[type=text]").val();
+          conn.send(mesg);
+          show("me", mesg);
+          $(this).find("input[type=text]").val("");
+
+          return false;
+        });
+
+        conn.on('data', function(data){
+          show("peer", data);
+        });
+
+        conn.on('error', function(err){
+          alert(JSON.stringify(err));
+          startService();
+        });
+        conn.on('close', function(ev){
+          console.log("dataconnection closed");
+          startService();
+        });
+      }
+
+      function show(id, mesg){
+        var $dt = $("<dt>").text(id)
+          , $dd = $("<dd>").text(mesg);
+        $(".send dl").append($dt).append($dd);
+      }
+
+      init();
+
+    </script>
+  </body>
+</html>

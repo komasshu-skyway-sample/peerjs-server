@@ -1,0 +1,10 @@
+{
+  "name": "peer-sample",
+  "version": "0.0.1",
+  "description": "PeerJS server test sample",
+  "author": "Kensaku Komatsu",
+  "license": "MIT",
+  "dependencies": {
+    "bunyan": "*"
+  }
+}
