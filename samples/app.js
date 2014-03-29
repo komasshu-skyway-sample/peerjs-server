@@ -2,7 +2,7 @@ var restify = require('restify')
   , bunyan = require('bunyan')
   , app = restify.createServer()
   , PeerServer = require('../lib/server').PeerServer
-  , peerserver = new PeerServer({port: 9000, key: 'peerjs'});
+  , peerserver = new PeerServer({port: 9000, key: 'peerjs', debug: true, disable_xhr: true});
 
 app.use(restify.queryParser());
 
