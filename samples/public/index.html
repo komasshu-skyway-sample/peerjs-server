@@ -50,7 +50,7 @@
         $(".send").hide();
         $(".connect").hide();
 
-        peer = new Peer(myid, {host: 'localhost', port: 9000, key: 'peerjs'});
+        peer = new Peer(myid, {host: location.hostname, port: 9000, key: 'peerjs'});
 
         peer.on('error', function(err){
           alert(JSON.stringify(err));

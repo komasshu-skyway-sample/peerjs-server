@@ -2,7 +2,7 @@ var restify = require('restify')
   , bunyan = require('bunyan')
   , app = restify.createServer()
   , PeerServer = require('../lib/server').PeerServer
-  , peerserver = new PeerServer({port: 9000, key: 'peerjs', debug: false, disable_xhr: true})
+  , peerserver = new PeerServer({port: 9000, key: 'peerjs', debug: true, disable_xhr: true})
   , socket_io = require('socket.io')
   
   
