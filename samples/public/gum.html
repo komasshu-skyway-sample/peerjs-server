@@ -1,0 +1,174 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <link href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css" rel="stylesheet">
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js"></script>
+    <script src="http://cdn.peerjs.com/0.3/peer.js"></script>
+  </head>
+  <body>
+    <div class="container">
+      <header>
+        <h1>Simple WebRTC text chat sample</h1>
+      </header>
+      <div>
+        my id : <span id="myid">...</span>
+      </div>
+
+      <div class="connect">
+        <form class="form-inline" role="form">
+          <div class="form-group">
+            <label class="sr-only" for="peerid">connect to </label>
+            <input type="number" class="form-control" id="peerid" required>
+          </div>
+          <button class="btn btn-info" type="submit">call</button>
+        </form>
+      </div>
+
+      <div id="video">
+        <div style="float:left; width:330px">
+          <b>self</b>&nbsp;&nbsp; <label for="send-video">send video<input type="checkbox" id="send-video" checked></label><br>
+          <video class="src" width="320" height="240"></video>
+        </div>
+        <div style="margin-left: 330px">
+          <b>remote</b><br>
+          <video class="recv" width="320" height="240"></video>
+        </div>
+        <!-- clearfix -->
+        <div style="clear:both"></div>
+      </div>
+   </div>
+
+    <script>
+      "use strict";
+      var peer, mystream, myvt, peerid;
+
+      function init() {
+        var myid = (Math.random() * 1000) | 0;
+        $("#myid").text(myid);
+
+        peer = new Peer(myid, {host: location.hostname, port: 9000, key: 'peerjs'});
+
+        peer.on('error', function(err){
+          alert(JSON.stringify(err));
+        });
+        peer.on('close', function(ev){
+          console.log("peer closed");
+        });
+
+        peer.on('open', function(){
+          startService();
+        });
+      }
+
+      function startService(){
+        // caller
+        $(".connect form").on("submit", function(ev){
+          ev.preventDefault();
+          peerid = $(this).find("#peerid").val();
+          createOriginStream(function(stream){
+            sendStream(peerid, stream);
+          });
+       });
+
+       function createOriginStream(cb){
+          $(".connect").hide();
+
+          navigator.webkitGetUserMedia({"video": true, "audio": true}, function(stream) {
+            mystream = stream;
+            console.dir(stream);
+            myvt = stream.getVideoTracks()[0];
+            cb(stream);
+          }, function(err){
+            throw "getUserMedia error" + err;
+          });
+        }
+
+        function sendStream(id, stream) {
+          var call = peer.call(id, stream);
+          play("video.src", stream);
+        }
+
+ 
+
+        $("#send-video").on("click", function(ev) {
+          if(!mystream) return; // indicating vieo conf doesn't start
+
+          var checked = $(this)[0].checked;
+
+          // Add or Remove video track from media stream
+          if(checked) {
+            // send video and audio
+            mystream.addTrack(myvt);
+          } else {
+            // send audio only
+            var vt = mystream.getVideoTracks()[0];
+            mystream.removeTrack(vt);
+          }
+
+          // close all former peer connections
+          var conns = peer.connections;
+          for(var peerid in conns) if(conns.hasOwnProperty(peerid)) {
+            conns[peerid].forEach(function(conn) {
+              // close each peer connection
+              if(conn.localStream) conn.close();
+            });
+          }
+
+ 
+          sendStream(peerid, mystream);
+        });
+
+
+              
+
+        // callee
+        var called = false;
+        peer.on('call', function(call) {
+          if(!mystream) {
+            $(".connect").hide();
+
+            // obtain peer's id from call object
+            peerid = call.peer;
+
+            createOriginStream(function(stream){
+              sendStream(peerid, stream);
+            });
+            called = true;
+          }
+
+          call.answer();
+          call.on('stream', function(peerstream) {
+            // close all former peer connections
+            var conns = peer.connections;
+            for(var peerid in conns) if(conns.hasOwnProperty(peerid)) {
+              conns[peerid].forEach(function(conn) {
+                // close each peer connection
+                if(!conn.localStream && conn !== call) conn.close();
+              });
+            }
+
+            play("video.recv", peerstream);
+          });
+        });
+      }
+
+      var play = function(elem, stream) {
+        if($(elem).attr("src")) {
+          var f_url = $(elem).attr("src");
+          window.URL.revokeObjectURL(f_url);
+        }
+        var url = window.URL.createObjectURL(stream);
+
+        $(elem).attr("src", url);
+        $(elem).on("loadedmetadata", function(ev){
+          $(this)[0].play();
+        });
+      }
+
+      init();
+
+    </script>
+  </body>
+</html>
